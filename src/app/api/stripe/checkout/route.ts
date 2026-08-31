@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       cleaningCategory = 'residential',
       cleaningType = 'std_domestic',
       unitsCount = 3,
+      cleanerCount = 1,
       scheduledDate,
       scheduledTime = '14:00',
       customQuoteAmount,
@@ -47,13 +48,14 @@ export async function POST(req: NextRequest) {
       scheduledDate: booking?.scheduled_date || scheduledDate || new Date().toISOString().split('T')[0],
       scheduledTime: booking?.scheduled_start_time || scheduledTime,
       unitsCount: booking?.units_count || unitsCount,
+      cleanerCount: booking?.cleaner_count || cleanerCount,
       cleanerRates,
       customQuoteAmount: customQuoteAmount ? parseFloat(customQuoteAmount) : 0
     });
 
     if (!booking) {
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
-      const chatUnlockTime = new Date(scheduledDateTime.getTime() - 20 * 60 * 1000).toISOString();
+      const chatUnlockTime = new Date(scheduledDateTime.getTime() - 30 * 60 * 1000).toISOString();
 
       booking = {
         id: `bk_${Date.now()}`,
@@ -65,12 +67,15 @@ export async function POST(req: NextRequest) {
         cleaning_type: cleaningType,
         pricing_model: pricing.chargeModel,
         units_count: unitsCount,
+        cleaner_count: pricing.cleanerCount,
+        cleaners_assigned: cleanerId ? [cleanerId] : [],
         scheduled_date: scheduledDate,
         scheduled_start_time: scheduledTime,
         is_emergency: pricing.isEmergency,
         is_afterhours: pricing.isAfterhours,
+        emergency_surcharge_amount: pricing.emergencySurchargeAmount,
         total_amount: pricing.finalTotalAmount,
-        deposit_amount: pricing.depositAmount,
+        deposit_amount: pricing.depositAmount, // 100% upfront
         cleaner_payout_amount: pricing.cleanerPayoutAmount,
         platform_commission: pricing.platformCommission,
         surge_bonus_amount: pricing.surgeBonusAmount,
@@ -106,7 +111,7 @@ export async function POST(req: NextRequest) {
             currency: 'gbp',
             product_data: {
               name: `DustBustars Cleaning (${booking.cleaning_category.toUpperCase()} - ${booking.cleaning_type.replace(/_/g, ' ')})`,
-              description: `Date: ${booking.scheduled_date} at ${booking.scheduled_start_time}. Includes 30% deposit (£${pricing.depositAmount.toFixed(2)}).`
+              description: `Date: ${booking.scheduled_date} at ${booking.scheduled_start_time}. Full 100% Upfront Payment (£${pricing.finalTotalAmount.toFixed(2)}).`
             },
             unit_amount: Math.round(pricing.finalTotalAmount * 100) // Amount in pence
           },
@@ -117,6 +122,7 @@ export async function POST(req: NextRequest) {
         booking_id: booking.id,
         customer_id: booking.customer_id,
         cleaner_id: booking.cleaner_id || '',
+        cleaner_count: pricing.cleanerCount.toString(),
         cleaner_stripe_account_id: cleanerStripeAccountId || '',
         deposit_amount: pricing.depositAmount.toString(),
         cleaner_payout: pricing.cleanerPayoutAmount.toString(),

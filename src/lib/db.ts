@@ -124,10 +124,13 @@ export interface Booking {
   is_emergency: boolean; // Requested within 4h (calendar) or 2h (direct)
   is_afterhours: boolean; // Start time >= 20:00
   total_amount: number;
-  deposit_amount: number; // 30%
+  deposit_amount: number; // 100% upfront
   cleaner_payout_amount: number;
   platform_commission: number;
   surge_bonus_amount: number;
+  emergency_surcharge_amount?: number; // £5/hr per cleaner for emergency bookings
+  cleaner_count?: number; // Number of cleaners booked for the job (default 1)
+  cleaners_assigned?: string[]; // Array of assigned cleaner IDs
   special_instructions?: string;
   quote_details?: string;
   quote_status?: 'pending' | 'submitted' | 'accepted' | 'declined';
@@ -138,11 +141,22 @@ export interface Booking {
   cleaner_finished_at?: string;
   before_photos: string[];
   after_photos: string[];
-  chat_unlocked_at?: string; // 20 mins prior to start time
+  chat_unlocked_at?: string; // 30 mins prior to start time
   cancellation_reason?: string;
   cancellation_penalty_fee?: number;
   refunded_amount?: number;
   created_at: string;
+}
+
+export function maskContactInfo(text: string): string {
+  if (!text) return text;
+  // Mask UK & international phone numbers
+  let masked = text.replace(/(\+?\d{1,4}[-.\s]?)?\(?\d{3,5}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g, '[masked contact info]');
+  // Mask email addresses
+  masked = masked.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[masked contact info]');
+  // Mask website URLs / social handles
+  masked = masked.replace(/(https?:\/\/[^\s]+|www\.[^\s]+)/g, '[masked link]');
+  return masked;
 }
 
 export interface ChatMessage {
@@ -394,10 +408,13 @@ export const INITIAL_DB: DatabaseSchema = {
       is_emergency: false,
       is_afterhours: false,
       total_amount: 66.00,
-      deposit_amount: 19.80, // 30%
+      deposit_amount: 66.00, // 100% upfront
       cleaner_payout_amount: 57.75,
       platform_commission: 8.25,
       surge_bonus_amount: 0,
+      emergency_surcharge_amount: 0,
+      cleaner_count: 1,
+      cleaners_assigned: ['usr_cleaner_1'],
       special_instructions: 'Please bring eco-friendly limescale remover for bathroom tiles.',
       status: 'booked',
       before_photos: [],
@@ -445,9 +462,10 @@ export const INITIAL_DB: DatabaseSchema = {
   system_settings: [
     { key: 'standard_commission_pct', value: '12.5', description: 'Standard platform commission percentage', updated_at: new Date().toISOString() },
     { key: 'emergency_commission_pct', value: '15.0', description: 'Emergency call-out commission percentage (<2 hours)', updated_at: new Date().toISOString() },
+    { key: 'emergency_surcharge_per_hour_gbp', value: '5.00', description: 'Emergency call-out surcharge rate (£5/hr per cleaner)', updated_at: new Date().toISOString() },
     { key: 'emergency_cleaner_bonus_pct', value: '10.0', description: 'Extra surge bonus percentage paid to cleaner for emergency/afterhours', updated_at: new Date().toISOString() },
     { key: 'dbs_check_fee_gbp', value: '23.00', description: 'Upfront DBS check fee charged to cleaner', updated_at: new Date().toISOString() },
-    { key: 'booking_deposit_pct', value: '30.0', description: 'Upfront booking deposit percentage', updated_at: new Date().toISOString() },
+    { key: 'booking_deposit_pct', value: '100.0', description: 'Upfront booking deposit percentage (100% upfront)', updated_at: new Date().toISOString() },
   ],
   cms_pages: [
     { slug: 'about-us', title: 'About DustBustars', content_markdown: '# About DustBustars\n\nWe connect London residents with trusted, independent local cleaners.', updated_at: new Date().toISOString() },

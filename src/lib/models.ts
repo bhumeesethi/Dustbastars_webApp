@@ -165,6 +165,9 @@ export interface IBooking extends Document {
   cleaner_payout_amount: number;
   platform_commission: number;
   surge_bonus_amount: number;
+  emergency_surcharge_amount?: number;
+  cleaner_count?: number;
+  cleaners_assigned?: string[];
   special_instructions?: string;
   status: string;
   before_photos: string[];
@@ -193,6 +196,9 @@ const BookingSchema: Schema = new Schema<IBooking>(
     cleaner_payout_amount: { type: Number, required: true },
     platform_commission: { type: Number, required: true },
     surge_bonus_amount: { type: Number, default: 0 },
+    emergency_surcharge_amount: { type: Number, default: 0 },
+    cleaner_count: { type: Number, default: 1 },
+    cleaners_assigned: { type: [String], default: [] },
     special_instructions: { type: String },
     status: { type: String, default: 'booked' },
     before_photos: { type: [String], default: [] },

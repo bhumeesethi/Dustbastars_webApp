@@ -44,6 +44,11 @@ import {
   Image as ImageIcon,
   Database
 } from 'lucide-react';
+import PublicCoverageMap from '@/components/PublicCoverageMap';
+import CleanerCoverageMap from '@/components/CleanerCoverageMap';
+import LiveJobTrackingMap from '@/components/LiveJobTrackingMap';
+import HeroLocationPicker from '@/components/HeroLocationPicker';
+import CustomerPropertyLocationPicker from '@/components/CustomerPropertyLocationPicker';
 
 export default function DustBustarsApp() {
   // Navigation & Role State
@@ -71,15 +76,13 @@ export default function DustBustarsApp() {
   const [authRole, setAuthRole] = useState<'customer' | 'cleaner' | 'admin'>('customer');
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [pendingRedirectTab, setPendingRedirectTab] = useState<string | null>(null);
 
   // Persistent Auth Session & Tab/Page Restore on Browser Reload
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const savedTab = localStorage.getItem('dustbustars_active_tab');
-    if (savedTab) {
-      setActiveTab(savedTab as any);
-    }
     const savedSubTab = localStorage.getItem('dustbustars_landing_subtab');
     if (savedSubTab) {
       setLandingSubTab(savedSubTab as any);
@@ -96,7 +99,7 @@ export default function DustBustarsApp() {
             setIsLoggedIn(true);
             setCurrentUser(data.user);
             setAuthRole(data.user.role);
-            if (savedTab) {
+            if (savedTab && savedTab !== 'landing') {
               setActiveTab(savedTab as any);
             } else {
               setActiveTab(data.user.role);
@@ -104,11 +107,20 @@ export default function DustBustarsApp() {
           } else {
             console.log('[Frontend Auth] Session token invalid or expired. Clearing localStorage.');
             localStorage.removeItem('dustbustars_auth_token');
+            setIsLoggedIn(false);
+            setCurrentUser(null);
+            setActiveTab('landing');
           }
         })
         .catch(err => {
           console.error('[Frontend Auth] Session restore error:', err);
+          setIsLoggedIn(false);
+          setActiveTab('landing');
         });
+    } else {
+      setIsLoggedIn(false);
+      setCurrentUser(null);
+      setActiveTab('landing');
     }
   }, []);
 
@@ -153,6 +165,7 @@ export default function DustBustarsApp() {
   const [bookingMode, setBookingMode] = useState<'calendar_post' | 'direct_cleaner'>('direct_cleaner');
   const [selectedCleanerId, setSelectedCleanerId] = useState<string>('usr_cleaner_1');
   const [unitsCount, setUnitsCount] = useState<number>(3);
+  const [cleanerCount, setCleanerCount] = useState<number>(1);
   const [scheduledDate, setScheduledDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [scheduledTime, setScheduledTime] = useState<string>('14:00');
   const [specialNotes, setSpecialNotes] = useState('');
@@ -182,6 +195,15 @@ export default function DustBustarsApp() {
     other_specialized: { enabled: true, charge_model: 'quote', amount: 0 }
   });
 
+  // Verified Cleaners Roster for Single & Multi-Cleaner Team Assignments
+  const availableCleanersPool = [
+    { id: 'usr_cleaner_1', name: 'Elena Rostova', roleLabel: 'Team Leader', rating: 4.95, jobs: 142, distance: '1.2 miles away', coverage: 'EC1 & N7 Coverage', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' },
+    { id: 'usr_cleaner_2', name: 'Marcus Vance', roleLabel: 'Cleaner 2', rating: 4.85, jobs: 95, distance: '1.8 miles away', coverage: 'E1 & EC1 Coverage', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150' },
+    { id: 'usr_cleaner_3', name: 'Priya Sharma', roleLabel: 'Cleaner 3', rating: 5.00, jobs: 64, distance: '2.4 miles away', coverage: 'N1 & NW1 Coverage', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150' },
+    { id: 'usr_cleaner_4', name: 'Sarah Jenkins', roleLabel: 'Cleaner 4', rating: 4.90, jobs: 88, distance: '3.1 miles away', coverage: 'SW1 & W1 Coverage', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150' },
+    { id: 'usr_cleaner_5', name: 'David Miller', roleLabel: 'Cleaner 5', rating: 4.88, jobs: 110, distance: '3.5 miles away', coverage: 'SE1 & EC2 Coverage', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' }
+  ];
+
   // Bookings & Execution State
   const [allBookings, setAllBookings] = useState<any[]>([
     {
@@ -190,14 +212,38 @@ export default function DustBustarsApp() {
       cleaning_category: 'residential',
       cleaning_type: 'std_domestic',
       units_count: 3,
+      cleaner_count: 1,
       base_amount: 48,
       surge_bonus: 0,
       final_total: 54,
-      deposit_amount: 16.20,
+      deposit_amount: 54,
+      customer_name: 'James Harrington',
+      cleaner_name: 'Elena Rostova',
       scheduled_date: new Date().toISOString().split('T')[0],
       scheduled_time: '14:00',
+      is_emergency: false,
       before_photos: ['https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500'],
       after_photos: ['https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=500']
+    },
+    {
+      id: 'bk_demo_102',
+      status: 'booked',
+      cleaning_category: 'residential',
+      cleaning_type: 'deep_clean',
+      units_count: 3,
+      cleaner_count: 3,
+      base_amount: 144,
+      surge_bonus: 14.40,
+      emergency_surcharge_amount: 45.00,
+      final_total: 233.91,
+      deposit_amount: 233.91,
+      customer_name: 'James Harrington',
+      cleaner_name: 'Elena Rostova & Team (3 Cleaners)',
+      scheduled_date: new Date().toISOString().split('T')[0],
+      scheduled_time: '16:30',
+      is_emergency: true,
+      before_photos: [],
+      after_photos: []
     }
   ]);
   const [activeBookingId, setActiveBookingId] = useState<string>('bk_demo_101');
@@ -282,19 +328,25 @@ export default function DustBustarsApp() {
   const fetchProperties = async () => {
     try {
       const res = await fetch(`/api/customer/properties?userId=usr_customer_1`);
+      if (!res.ok) return;
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) return;
       const data = await res.json();
       if (data.properties && data.properties.length > 0) {
         setProperties(data.properties);
         if (!selectedPropertyId) setSelectedPropertyId(data.properties[0].id);
       }
     } catch (e: any) {
-      console.error('Fetch properties silent fallback:', e);
+      // silent fallback
     }
   };
 
   const fetchCleanerProfile = async () => {
     try {
-      const res = await fetch(`/api/cleaner/profile?userId=${cleanerUserId}`);
+      const res = await fetch(`/api/cleaner/profile?userId=usr_cleaner_1`);
+      if (!res.ok) return;
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) return;
       const data = await res.json();
       if (data.profile) {
         setCleanerProfile(data.profile);
@@ -305,33 +357,40 @@ export default function DustBustarsApp() {
         setOptInQuotes(data.profile.opt_in_quotes ?? true);
       }
     } catch (e: any) {
-      console.error('Fetch cleaner profile silent fallback:', e);
+      // silent fallback
     }
   };
 
   const fetchBookings = async () => {
     try {
       const res = await fetch(`/api/bookings?userId=usr_customer_1`);
+      if (!res.ok) return;
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) return;
       const data = await res.json();
       if (data.bookings) setAllBookings(data.bookings);
     } catch (e: any) {
-      console.error('Fetch bookings silent fallback:', e);
+      // silent fallback
     }
   };
 
+  const [isFetchingChat, setIsFetchingChat] = useState<boolean>(false);
+
   const fetchChatMessages = async (bId: string) => {
+    setIsFetchingChat(true);
     try {
       const res = await fetch(`/api/chat?bookingId=${bId}`);
       const data = await res.json();
       if (data.messages) setChatMessages(data.messages);
-      setChatUnlocked(data.isUnlocked);
-      setMinutesUntilChatUnlock(data.minutesUntilUnlock || 0);
+      setChatUnlocked(data.is_portal_unlocked ?? true);
     } catch (e: any) {
-      console.error(e);
+      console.error('Fetch chat error:', e);
+    } finally {
+      setIsFetchingChat(false);
     }
   };
 
-  // Pricing Engine Live Calculator
+  // Pricing Engine Live Calculator (Client Rules Enforced)
   const calculateLivePricing = () => {
     const isQuote = ['end_of_tenancy_removal', 'medical_clinical', 'events', 'other_specialized'].includes(cleaningType);
     let unitRate = 0;
@@ -343,7 +402,9 @@ export default function DustBustarsApp() {
       unitRate = ['end_of_tenancy', 'airbnb'].includes(cleaningType) ? 30 : 18;
     }
 
-    const baseTotal = isQuote ? unitRate : unitRate * Math.max(1, unitsCount);
+    const count = Math.max(1, cleanerCount || 1);
+    const perCleanerBase = isQuote ? unitRate : unitRate * Math.max(1, unitsCount);
+    const baseTotal = perCleanerBase * count;
 
     const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
     const now = new Date();
@@ -351,25 +412,36 @@ export default function DustBustarsApp() {
 
     const isEmergency = 
       (bookingMode === 'calendar_post' && diffHours > 0 && diffHours <= 4) ||
-      (bookingMode === 'direct_cleaner' && diffHours > 0 && diffHours <= 2);
+      (bookingMode === 'direct_cleaner' && diffHours > 0 && diffHours <= 2) ||
+      heroIsEmergency;
 
     const hourOfDay = parseInt(scheduledTime.split(':')[0] || '0', 10);
     const isAfterhours = hourOfDay >= 20;
 
+    // Client Rule 2: Emergency surcharge £5/hr per cleaner
+    const emergencySurcharge = isEmergency ? (5.00 * Math.max(1, unitsCount) * count) : 0;
+
     const surgePct = (isEmergency || isAfterhours) ? 0.10 : 0.0;
     const surgeBonus = baseTotal * surgePct;
-    const finalTotal = baseTotal + surgeBonus;
-    const deposit = finalTotal * 0.30;
-    const commissionPct = (isEmergency || isAfterhours) ? 0.15 : 0.125;
-    const platformComm = finalTotal * commissionPct;
-    const cleanerPayout = finalTotal - platformComm;
+    const subtotal = baseTotal + emergencySurcharge + surgeBonus;
+
+    // Client Rule 3 & 2: 12.5% standard fee (for single or multi-cleaner), 15% for emergency
+    const commissionPct = isEmergency ? 0.15 : 0.125;
+    const platformComm = Number((subtotal * commissionPct).toFixed(2));
+    const finalTotal = Number((subtotal + platformComm).toFixed(2));
+
+    // Client Rule 4: Pay first upfront everything (100% upfront)
+    const deposit = finalTotal;
+    const cleanerPayout = Number((finalTotal - platformComm).toFixed(2));
 
     return {
       isQuote,
       unitRate,
+      cleanerCount: count,
       baseTotal,
       isEmergency,
       isAfterhours,
+      emergencySurcharge,
       surgeBonus,
       finalTotal,
       deposit,
@@ -428,6 +500,7 @@ export default function DustBustarsApp() {
           cleaningCategory,
           cleaningType,
           unitsCount,
+          cleanerCount,
           scheduledDate,
           scheduledTime,
           specialInstructions: specialNotes,
@@ -436,7 +509,7 @@ export default function DustBustarsApp() {
       });
       const data = await res.json();
       if (data.success) {
-        showAlert(`Booking created! 30% Deposit (£${data.booking.deposit_amount.toFixed(2)}) processed. Total: £${data.booking.total_amount.toFixed(2)}`, 'success');
+        showAlert(`Booking created! 100% Upfront Payment (£${data.booking.total_amount.toFixed(2)}) processed. Total: £${data.booking.total_amount.toFixed(2)}`, 'success');
         fetchBookings();
         setActiveBookingId(data.booking.id);
         setActiveTab('execution');
@@ -491,6 +564,7 @@ export default function DustBustarsApp() {
           cleaningCategory,
           cleaningType,
           unitsCount,
+          cleanerCount,
           scheduledDate,
           scheduledTime,
           specialInstructions: specialNotes,
@@ -509,7 +583,7 @@ export default function DustBustarsApp() {
             setShowStripeCheckoutModal(false);
             setPaymentSuccess(false);
             setActiveTab('execution');
-            showAlert(`🎉 Stripe Payment Verified! 30% Deposit (£${data.booking.deposit_amount.toFixed(2)}) paid. Booking Confirmed.`, 'success');
+            showAlert(`🎉 Stripe Payment Verified! Full 100% Upfront Payment (£${data.booking.total_amount.toFixed(2)}) paid. Booking Confirmed.`, 'success');
           }, 1500);
         } else {
           showAlert(`Stripe Payment Error: ${data.error || 'Payment authorization failed'}`, 'error');
@@ -986,9 +1060,10 @@ export default function DustBustarsApp() {
           </div>
         ) : (
           /* Logged-In Web Application Navigation Bar */
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <nav className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
               {[
+                { id: 'landing', label: 'Website Home', icon: Sparkles, color: 'from-slate-800 to-slate-950' },
                 { id: 'customer', label: 'Customer Portal', icon: Building2, color: 'from-cyan-600 to-blue-600' },
                 { id: 'cleaner', label: 'Cleaner Portal', icon: UserCheck, color: 'from-emerald-600 to-teal-600' },
                 { id: 'pricing', label: 'Surge & Refunds Engine', icon: Zap, color: 'from-amber-600 to-orange-600' },
@@ -1013,21 +1088,23 @@ export default function DustBustarsApp() {
               })}
             </nav>
 
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+            <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
               <span className="text-xs font-bold text-[#0f1a38] hidden lg:inline">
-                {authRole === 'cleaner' ? 'Elena (Cleaner)' : 'James (Customer)'}
+                👤 {currentUser?.full_name || (authRole === 'cleaner' ? 'Elena (Cleaner)' : 'James (Customer)')}
               </span>
               <button
                 onClick={() => {
                   if (typeof window !== 'undefined') {
                     localStorage.removeItem('dustbustars_auth_token');
+                    localStorage.removeItem('dustbustars_active_tab');
                   }
                   setIsLoggedIn(false);
                   setCurrentUser(null);
                   setActiveTab('landing');
-                  showAlert('Logged out successfully. Returned to Home Landing Page.', 'info');
+                  setLandingSubTab('home');
+                  showAlert('Signed out successfully. Returned to Home Landing Page.', 'info');
                 }}
-                className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 cursor-pointer active:scale-95"
+                className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-xs"
               >
                 Sign Out 🚪
               </button>
@@ -2005,20 +2082,11 @@ export default function DustBustarsApp() {
                     <h3 className="text-xl font-black text-slate-900">Find a Cleaner</h3>
                     
                     <div className="space-y-3 text-xs">
-                      {/* Postcode */}
-                      <div>
-                        <label className="font-bold text-slate-700 block mb-1">Postcode Location</label>
-                        <div className="relative">
-                          <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                          <input
-                            type="text"
-                            placeholder="Enter your postcode (e.g. EC1M 3HA)"
-                            value={heroPostcode}
-                            onChange={(e) => setHeroPostcode(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-[#ff6b00]"
-                          />
-                        </div>
-                      </div>
+                      {/* Interactive Postcode Location Picker with Mini-Map & Autocomplete */}
+                      <HeroLocationPicker
+                        value={heroPostcode}
+                        onChange={(postcode) => setHeroPostcode(postcode)}
+                      />
 
                       {/* Cleaning Type */}
                       <div>
@@ -2080,7 +2148,15 @@ export default function DustBustarsApp() {
                           setCleaningType(heroType);
                           setScheduledDate(heroDate);
                           setScheduledTime(heroTime);
-                          setActiveTab('customer');
+                          
+                          if (!isLoggedIn) {
+                            showAlert('Please sign in or create an account to view available cleaners and complete your booking.', 'info');
+                            setAuthRole('customer');
+                            setPendingRedirectTab('customer');
+                            setShowAuthModal(true);
+                          } else {
+                            setActiveTab('customer');
+                          }
                         }}
                         className="w-full py-3.5 rounded-xl bg-[#ff6b00] hover:bg-[#e05e00] text-white font-extrabold text-sm transition-all shadow-lg shadow-orange-500/30 cursor-pointer active:scale-95 flex items-center justify-center gap-2"
                       >
@@ -2192,6 +2268,10 @@ export default function DustBustarsApp() {
                     </button>
                   </div>
                 ))}
+              </div>
+
+              <div className="pt-8">
+                <PublicCoverageMap />
               </div>
 
               <div className="text-center pt-4">
@@ -2406,6 +2486,15 @@ export default function DustBustarsApp() {
                     ))}
                   </div>
 
+                  {/* Interactive Property Location Selector Map */}
+                  <div className="pt-3 border-t border-slate-200">
+                    <CustomerPropertyLocationPicker
+                      selectedPostcode={heroPostcode}
+                      onPostcodeChange={(postcode) => setHeroPostcode(postcode)}
+                      propertyName={properties.find(p => p.id === selectedPropertyId)?.name || 'EC1 Penthouse'}
+                    />
+                  </div>
+
                   {/* Quick Preset Buttons */}
                   <div className="space-y-2">
                     <span className="text-[11px] font-bold text-slate-500">Quick Property Presets:</span>
@@ -2489,6 +2578,60 @@ export default function DustBustarsApp() {
                         <Plus className="w-4 h-4 text-white font-bold" /> Add Property Now
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                {/* My Active & Emergency Bookings List Card */}
+                <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4 text-slate-900">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-black text-[#0f1a38] flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-[#ff6b00]" />
+                      My Active & Emergency Bookings
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300">
+                      {allBookings.length} Active
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {allBookings.map((bk) => (
+                      <div 
+                        key={bk.id}
+                        onClick={() => {
+                          setActiveBookingId(bk.id);
+                          setActiveTab('execution');
+                        }}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2 hover:border-[#ff6b00] ${
+                          activeBookingId === bk.id 
+                            ? 'bg-slate-50 border-[#ff6b00] shadow-2xs' 
+                            : 'bg-slate-50/60 border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-extrabold text-[#0f1a38] font-mono">{bk.id}</span>
+                          {bk.is_emergency ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-800 font-extrabold border border-rose-300 flex items-center gap-1">
+                              <Zap className="w-3 h-3 fill-rose-600 text-rose-600" />
+                              EMERGENCY BOOKING
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-extrabold border border-emerald-300">
+                              Standard Booking
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="text-xs text-slate-700 font-semibold flex items-center justify-between">
+                          <span className="capitalize">{bk.cleaning_type.replace(/_/g, ' ')} ({bk.cleaner_count || 1} Cleaner{bk.cleaner_count > 1 ? 's' : ''})</span>
+                          <span className="font-black text-[#ff6b00]">£{(bk.final_total || bk.total_amount || 0).toFixed(2)}</span>
+                        </div>
+
+                        <div className="text-[11px] text-slate-500 flex items-center justify-between font-medium">
+                          <span>Scheduled: {bk.scheduled_date} at {bk.scheduled_time || bk.scheduled_start_time}</span>
+                          <span className="text-blue-700 font-bold hover:underline">View Live Job Hub ↗</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -2588,7 +2731,7 @@ export default function DustBustarsApp() {
                     </select>
                   </div>
 
-                  {/* Quantity or Custom Quote Amount */}
+                  {/* Quantity & Cleaner Count Controls */}
                   {livePricing.isQuote ? (
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-amber-800">Enter Your Preferred Quote Budget (£)</label>
@@ -2601,29 +2744,60 @@ export default function DustBustarsApp() {
                       />
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-600">
-                        {['end_of_tenancy', 'airbnb'].includes(cleaningType) ? 'Number of Rooms' : 'Duration (Hours)'}
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setUnitsCount(Math.max(1, unitsCount - 1))}
-                          className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 font-extrabold text-lg text-slate-800 hover:bg-slate-200 cursor-pointer active:scale-95"
-                        >
-                          -
-                        </button>
-                        <span className="text-lg font-black w-12 text-center text-[#0f1a38]">{unitsCount}</span>
-                        <button
-                          type="button"
-                          onClick={() => setUnitsCount(unitsCount + 1)}
-                          className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 font-extrabold text-lg text-slate-800 hover:bg-slate-200 cursor-pointer active:scale-95"
-                        >
-                          +
-                        </button>
-                        <span className="text-xs text-slate-600 font-bold">
-                          @ £{livePricing.unitRate.toFixed(2)} / {['end_of_tenancy', 'airbnb'].includes(cleaningType) ? 'room' : 'hr'}
-                        </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Duration / Rooms */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-600">
+                          {['end_of_tenancy', 'airbnb'].includes(cleaningType) ? 'Number of Rooms' : 'Duration (Hours)'}
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setUnitsCount(Math.max(1, unitsCount - 1))}
+                            className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 font-extrabold text-base text-slate-800 hover:bg-slate-200 cursor-pointer active:scale-95"
+                          >
+                            -
+                          </button>
+                          <span className="text-base font-black w-8 text-center text-[#0f1a38]">{unitsCount}</span>
+                          <button
+                            type="button"
+                            onClick={() => setUnitsCount(unitsCount + 1)}
+                            className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 font-extrabold text-base text-slate-800 hover:bg-slate-200 cursor-pointer active:scale-95"
+                          >
+                            +
+                          </button>
+                          <span className="text-[11px] text-slate-600 font-bold">
+                            @ £{livePricing.unitRate.toFixed(2)}/{['end_of_tenancy', 'airbnb'].includes(cleaningType) ? 'rm' : 'hr'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Number of Cleaners Selector (Rule 5 & 3) */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-600 flex items-center justify-between">
+                          <span>Number of Cleaners</span>
+                          <span className="text-[10px] text-blue-700 font-extrabold">Fee stays 12.5%</span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setCleanerCount(Math.max(1, cleanerCount - 1))}
+                            className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 font-extrabold text-base text-slate-800 hover:bg-slate-200 cursor-pointer active:scale-95"
+                          >
+                            -
+                          </button>
+                          <span className="text-base font-black w-8 text-center text-[#0f1a38]">{cleanerCount}</span>
+                          <button
+                            type="button"
+                            onClick={() => setCleanerCount(cleanerCount + 1)}
+                            className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 font-extrabold text-base text-slate-800 hover:bg-slate-200 cursor-pointer active:scale-95"
+                          >
+                            +
+                          </button>
+                          <span className="text-[11px] text-slate-600 font-bold">
+                            {cleanerCount > 1 ? `${cleanerCount} Cleaners Team` : '1 Cleaner'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2649,6 +2823,36 @@ export default function DustBustarsApp() {
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-medium focus:outline-none focus:border-[#ff6b00] cursor-pointer"
                       />
                     </div>
+                  </div>
+
+                  {/* Logged-In Emergency Express Call-out Toggle */}
+                  <div className={`p-4 rounded-2xl border transition-all space-y-2 ${
+                    heroIsEmergency 
+                      ? 'bg-rose-50 border-rose-300 text-rose-900 shadow-2xs' 
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={heroIsEmergency}
+                          onChange={(e) => setHeroIsEmergency(e.target.checked)}
+                          className="w-4 h-4 accent-rose-600 cursor-pointer"
+                        />
+                        <span className="font-extrabold text-xs text-[#0f1a38] flex items-center gap-1.5">
+                          <Zap className={`w-4 h-4 ${heroIsEmergency ? 'text-rose-600 fill-rose-600' : 'text-amber-500'}`} />
+                          Emergency Express Booking (&lt;4h / &lt;2h Priority Callout)
+                        </span>
+                      </label>
+                      {heroIsEmergency && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white uppercase tracking-wider">
+                          ⚡ Emergency Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-medium pl-6">
+                      Need urgent cleaning? Toggle Emergency mode for rapid cleaner dispatch within 2-4 hours (+£5/hr per cleaner surcharge & 15% platform fee).
+                    </p>
                   </div>
 
                   {/* Booking Mode Selector */}
@@ -2684,76 +2888,124 @@ export default function DustBustarsApp() {
                           <Search className="w-4 h-4 text-[#ff6b00]" />
                           Search & Book Cleaner Directly
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">Choose a top-rated cleaner from your favorites or search list.</p>
+                        <p className="text-xs text-slate-400 mt-1">Choose top-rated cleaner(s) from your favorites or search list.</p>
                       </button>
                     </div>
                   </div>
 
-                  {/* Direct Cleaner Selection Card */}
+                  {/* Direct Cleaner / Multi-Cleaner Team Selection Cards */}
                   {bookingMode === 'direct_cleaner' && (
-                    <div 
-                      onClick={() => setSelectedCleanerId('usr_cleaner_1')}
-                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-[#ff6b00] transition-all cursor-pointer space-y-3"
-                    >
-                      <div className="flex items-center justify-between text-xs text-slate-600 font-semibold">
-                        <span className="font-extrabold text-[#0f1a38]">Elena Rostova (Selected Cleaner)</span>
-                        <span className="text-emerald-700 font-extrabold">1.2 miles away</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-600">
+                          {cleanerCount > 1 ? `Selected Cleaners Team (${cleanerCount} Cleaners Assigned)` : 'Selected Cleaner (1 Cleaner)'}
+                        </label>
+                        <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          ✓ DBS Verified Team
+                        </span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <img
-                          src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150"
-                          alt="Cleaner Avatar"
-                          className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 font-black text-sm text-[#0f1a38]">
-                            <span>Elena Rostova</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-extrabold border border-emerald-300">
-                              DBS Verified ✓
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-600 mt-0.5 font-bold">
-                            <span className="flex items-center text-amber-600">★ 4.95 (142 jobs)</span>
-                            <span>• EC1 & N7 Coverage</span>
-                          </div>
-                        </div>
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (favorites.includes('usr_cleaner_1')) {
-                              setFavorites(favorites.filter(f => f !== 'usr_cleaner_1'));
-                              showAlert('Removed from Favorites', 'info');
-                            } else {
-                              setFavorites([...favorites, 'usr_cleaner_1']);
-                              showAlert('Added to Favorites for future bookings!', 'success');
-                            }
-                          }}
-                          className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-pink-500 transition-all text-pink-600 cursor-pointer active:scale-95"
-                        >
-                          <Heart className={`w-5 h-5 ${favorites.includes('usr_cleaner_1') ? 'fill-pink-500 text-pink-500' : ''}`} />
-                        </button>
+                      <div className="space-y-2.5">
+                        {availableCleanersPool.slice(0, Math.min(cleanerCount, availableCleanersPool.length)).map((cl, idx) => (
+                          <div 
+                            key={cl.id}
+                            onClick={() => setSelectedCleanerId(cl.id)}
+                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 ${
+                              selectedCleanerId === cl.id || idx === 0
+                                ? 'bg-slate-50 border-[#ff6b00] shadow-2xs' 
+                                : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-xs text-slate-600 font-semibold">
+                              <span className="font-extrabold text-[#0f1a38] flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded-md text-[10px] bg-slate-200 text-slate-800 font-extrabold">
+                                  {cleanerCount > 1 ? `${cl.roleLabel}` : 'Selected Cleaner'}
+                                </span>
+                                {cl.name}
+                              </span>
+                              <span className="text-emerald-700 font-extrabold">{cl.distance}</span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={cl.avatar}
+                                alt={cl.name}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500 shrink-0"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 font-black text-xs text-[#0f1a38]">
+                                  <span>{cl.name}</span>
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] bg-emerald-100 text-emerald-800 font-extrabold border border-emerald-300">
+                                    DBS Verified ✓
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-slate-600 mt-0.5 font-bold">
+                                  <span className="flex items-center text-amber-600">★ {cl.rating} ({cl.jobs} jobs)</span>
+                                  <span>• {cl.coverage}</span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (favorites.includes(cl.id)) {
+                                    setFavorites(favorites.filter(f => f !== cl.id));
+                                    showAlert(`Removed ${cl.name} from Favorites`, 'info');
+                                  } else {
+                                    setFavorites([...favorites, cl.id]);
+                                    showAlert(`Added ${cl.name} to Favorites for future bookings!`, 'success');
+                                  }
+                                }}
+                                className="p-2 rounded-xl bg-white border border-slate-200 hover:border-pink-500 transition-all text-pink-600 cursor-pointer active:scale-95"
+                              >
+                                <Heart className={`w-4 h-4 ${favorites.includes(cl.id) ? 'fill-pink-500 text-pink-500' : ''}`} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Emergency Express Callout Banner */}
+                  {livePricing.isEmergency && (
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 text-white text-xs font-bold flex items-center justify-between shadow-md">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 fill-white shrink-0" />
+                        <span>⚡ EMERGENCY EXPRESS DISPATCH APPLIED (+£5/hr per cleaner surcharge)</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-white/20 text-[10px] uppercase font-black">Priority 1</span>
                     </div>
                   )}
 
                   {/* Checkout & Price Summary Card */}
                   <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 text-slate-900">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600 font-semibold">Base Clean Price</span>
+                      <span className="text-slate-600 font-semibold">
+                        Base Clean Price ({livePricing.cleanerCount} {livePricing.cleanerCount === 1 ? 'Cleaner' : 'Cleaners'} × {unitsCount} hrs)
+                      </span>
                       <span className="font-extrabold text-[#0f1a38]">£{livePricing.baseTotal.toFixed(2)}</span>
                     </div>
 
-                    {livePricing.surgeBonus > 0 && (
+                    {livePricing.emergencySurcharge > 0 && (
                       <div className="flex items-center justify-between text-sm text-rose-700 font-bold">
-                        <span>Emergency Call-out Bonus</span>
+                        <span>Emergency Surcharge (£5/hr × {livePricing.cleanerCount} cleaner{livePricing.cleanerCount > 1 ? 's' : ''})</span>
+                        <span>+£{livePricing.emergencySurcharge.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {livePricing.surgeBonus > 0 && (
+                      <div className="flex items-center justify-between text-sm text-amber-700 font-bold">
+                        <span>Afterhours Bonus (10%)</span>
                         <span>+£{livePricing.surgeBonus.toFixed(2)}</span>
                       </div>
                     )}
 
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600 font-semibold">Platform Fee (12.5%)</span>
+                      <span className="text-slate-600 font-semibold">
+                        Platform Fee ({livePricing.isEmergency ? '15% Emergency' : '12.5% Standard'})
+                      </span>
                       <span className="font-extrabold text-[#0f1a38]">£{livePricing.platformComm.toFixed(2)}</span>
                     </div>
 
@@ -2763,7 +3015,7 @@ export default function DustBustarsApp() {
                     </div>
 
                     <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-slate-700 flex items-center justify-between font-medium">
-                      <span>30% Deposit Due Today:</span>
+                      <span>100% Upfront Payment Required:</span>
                       <span className="font-extrabold text-blue-900">£{livePricing.deposit.toFixed(2)}</span>
                     </div>
 
@@ -2808,6 +3060,63 @@ export default function DustBustarsApp() {
                     <CheckCircle2 className="w-3.5 h-3.5" /> DBS Approved ({cleanerProfile?.dbs_provider || 'uCheck'})
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Incoming Emergency Callouts & Priority Dispatch Card */}
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-rose-950/70 to-slate-900 border border-rose-800/60 shadow-xl space-y-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-2xl bg-rose-600/30 border border-rose-500/50 text-white">
+                    <Zap className="w-6 h-6 text-rose-400 fill-rose-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-white flex items-center gap-2">
+                      Incoming Emergency Callouts & Priority Dispatch
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-rose-600 text-white font-extrabold uppercase">Live Hub</span>
+                    </h3>
+                    <p className="text-xs text-rose-200 mt-0.5">High-priority emergency jobs within your 5-mile service radius (+10% Surge Pay Bonus)</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white border border-rose-400 uppercase tracking-wider">
+                  ⚡ 1 Emergency Call-out Active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {allBookings.filter(b => b.is_emergency || b.id === 'bk_demo_102').map((emBk) => (
+                  <div key={emBk.id} className="p-4 rounded-2xl bg-slate-950/80 border border-rose-800/80 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono font-bold text-rose-300">{emBk.id}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-rose-600 text-white font-extrabold uppercase">
+                        ⚡ EMERGENCY (&lt;2h EXPRESS)
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="font-extrabold text-sm text-white capitalize">{emBk.cleaning_type.replace(/_/g, ' ')} ({emBk.cleaner_count || 3} Cleaners Required)</div>
+                      <div className="text-xs text-slate-300 font-medium">EC1M 3HA (Highbury House) • Scheduled {emBk.scheduled_date} at {emBk.scheduled_time || emBk.scheduled_start_time || '16:30'}</div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Estimated Cleaner Payout:</span>
+                        <span className="font-extrabold text-emerald-400 text-sm">£{(emBk.final_total ? emBk.final_total * 0.85 : 198.82).toFixed(2)}</span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setActiveBookingId(emBk.id);
+                          setActiveTab('execution');
+                          showAlert(`Accepted Emergency Callout (${emBk.id})! Dispatched team to location.`, 'success');
+                        }}
+                        className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs transition-all shadow-md shadow-rose-600/30 cursor-pointer active:scale-95"
+                      >
+                        Accept Emergency Job ⚡
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -2936,7 +3245,7 @@ export default function DustBustarsApp() {
                     3. Location & Service Distance Radius
                   </h3>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div>
                       <label className="text-xs font-bold text-slate-600 block mb-1">Base Postcode</label>
                       <input
@@ -2960,6 +3269,11 @@ export default function DustBustarsApp() {
                         onChange={(e) => setServiceRadius(parseInt(e.target.value, 10))}
                         className="w-full accent-emerald-600 cursor-pointer"
                       />
+                    </div>
+
+                    {/* Interactive Google Map with Dynamic Coverage Circle */}
+                    <div className="pt-2">
+                      <CleanerCoverageMap postcode={servicePostcode} radiusMiles={serviceRadius} />
                     </div>
                   </div>
                 </div>
@@ -3290,6 +3604,14 @@ export default function DustBustarsApp() {
                   </div>
                 </div>
 
+                {/* Real-Time Google Maps Live Cleaner GPS Dispatch Tracking */}
+                <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4 text-slate-900">
+                  <LiveJobTrackingMap
+                    cleanerName={currentBooking?.cleaner_name || 'Elena Rostova'}
+                    propertyName="EC1 Penthouse"
+                  />
+                </div>
+
                 {/* Before & After Photo Upload Proof Card */}
                 <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-6 text-slate-900">
                   <div className="flex items-center justify-between">
@@ -3541,10 +3863,15 @@ export default function DustBustarsApp() {
               <div className="lg:col-span-5 space-y-6">
                 <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col h-[520px] text-slate-900">
                   <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                    <h3 className="text-base font-black flex items-center gap-2 text-[#0f1a38]">
-                      <MessageSquare className="w-5 h-5 text-purple-600" />
-                      Cleaner Chat
-                    </h3>
+                    <div>
+                      <h3 className="text-base font-black flex items-center gap-2 text-[#0f1a38]">
+                        <MessageSquare className="w-5 h-5 text-purple-600" />
+                        Masked Communication Portal
+                      </h3>
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                        🔒 Contact details hidden. Portal unlocks 30 mins before job begins.
+                      </p>
+                    </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -3552,20 +3879,25 @@ export default function DustBustarsApp() {
                         className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-300 text-[10px] font-bold cursor-pointer hover:bg-purple-200"
                         title="Toggle chat unlock state for testing"
                       >
-                        ⚡ Unlock Chat
+                        ⚡ Toggle Portal
                       </button>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                         chatUnlocked ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
                       }`}>
-                        {chatUnlocked ? 'Unlocked' : `Locked (${minutesUntilChatUnlock}m)`}
+                        {chatUnlocked ? 'Unlocked (Active)' : 'Locked (30m Before Start)'}
                       </span>
                     </div>
                   </div>
 
                   {/* Chat Messages Log */}
-                  <div className="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                    {chatMessages.length === 0 ? (
-                      <div className="text-center text-xs text-slate-500 py-10 font-medium">No chat messages yet.</div>
+                  <div className="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 relative">
+                    {isFetchingChat ? (
+                      <div className="flex flex-col items-center justify-center h-full py-12 space-y-2 text-purple-700">
+                        <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                        <span className="text-xs font-bold">Syncing live chat messages...</span>
+                      </div>
+                    ) : chatMessages.length === 0 ? (
+                      <div className="text-center text-xs text-slate-500 py-10 font-medium">No chat messages yet. Communication portal active.</div>
                     ) : (
                       chatMessages.map((m) => (
                         <div
@@ -3590,7 +3922,7 @@ export default function DustBustarsApp() {
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
                     <input
                       type="text"
-                      placeholder={chatUnlocked ? "Type message..." : "Chat unlocks 20m before job start..."}
+                      placeholder={chatUnlocked ? "Type message (phone/email masked)..." : "Portal unlocks 30m before job start time..."}
                       disabled={!chatUnlocked}
                       value={newChatMessage}
                       onChange={(e) => setNewChatMessage(e.target.value)}
@@ -4187,7 +4519,9 @@ export default function DustBustarsApp() {
                       localStorage.setItem('dustbustars_auth_token', data.token);
                       setIsLoggedIn(true);
                       setCurrentUser(data.user);
-                      setActiveTab(authRole);
+                      const targetTab = pendingRedirectTab || authRole;
+                      setActiveTab(targetTab as any);
+                      setPendingRedirectTab(null);
                       setShowAuthModal(false);
                       showAlert(`Account created & saved in Database! Welcome, ${data.user.full_name}!`, 'success');
                     } else {
@@ -4219,7 +4553,9 @@ export default function DustBustarsApp() {
                       setIsLoggedIn(true);
                       setCurrentUser(data.user);
                       setAuthRole(data.user.role);
-                      setActiveTab(data.user.role);
+                      const targetTab = pendingRedirectTab || data.user.role || 'customer';
+                      setActiveTab(targetTab as any);
+                      setPendingRedirectTab(null);
                       setShowAuthModal(false);
                       showAlert(`Signed in successfully! Welcome back, ${data.user.full_name}!`, 'success');
                     } else {
@@ -4308,13 +4644,17 @@ export default function DustBustarsApp() {
                           localStorage.setItem('dustbustars_auth_token', data.token);
                           setIsLoggedIn(true);
                           setCurrentUser(data.user);
-                          setActiveTab(authRole);
+                          const targetTab = pendingRedirectTab || authRole;
+                          setActiveTab(targetTab as any);
+                          setPendingRedirectTab(null);
                           setShowAuthModal(false);
                           showAlert(`Demo login successful! Logged in as ${data.user.full_name}`, 'success');
                         }
                       } catch (err) {
                         setIsLoggedIn(true);
-                        setActiveTab(authRole);
+                        const targetTab = pendingRedirectTab || authRole;
+                        setActiveTab(targetTab as any);
+                        setPendingRedirectTab(null);
                         setShowAuthModal(false);
                       } finally {
                         setIsAuthSubmitting(false);

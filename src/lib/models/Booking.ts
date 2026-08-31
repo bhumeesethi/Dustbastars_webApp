@@ -19,6 +19,9 @@ export interface IBookingDoc extends Document {
   cleaner_payout_amount: number;
   platform_commission: number;
   surge_bonus_amount: number;
+  emergency_surcharge_amount?: number;
+  cleaner_count?: number;
+  cleaners_assigned?: string[];
   special_instructions?: string;
   quote_details?: string;
   quote_status?: 'pending' | 'submitted' | 'accepted' | 'declined';
@@ -56,6 +59,9 @@ const BookingSchema = new Schema<IBookingDoc>(
     cleaner_payout_amount: { type: Number, required: true },
     platform_commission: { type: Number, required: true },
     surge_bonus_amount: { type: Number, default: 0 },
+    emergency_surcharge_amount: { type: Number, default: 0 },
+    cleaner_count: { type: Number, default: 1 },
+    cleaners_assigned: [{ type: String }],
     special_instructions: { type: String },
     quote_details: { type: String },
     quote_status: { type: String, enum: ['pending', 'submitted', 'accepted', 'declined'] },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToMongoDB } from '@/lib/mongodb';
 import { BookingModel } from '@/lib/models';
 import { getDb, saveDb } from '@/lib/db';
+import { calculateBookingPrice } from '@/lib/services/pricing';
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,23 +35,39 @@ export async function POST(req: NextRequest) {
       customerId = 'usr_customer_1',
       cleanerId = 'usr_cleaner_1',
       propertyId = 'prop_1',
+      cleaningCategory = 'residential',
       cleaningType = 'std_domestic',
       scheduledDate,
-      scheduledStartTime = '14:00',
+      scheduledStartTime,
+      scheduledTime,
       unitsCount = 3,
+      cleanerCount = 1,
       hourlyRate = 17.0,
       isEmergency = false,
       specialInstructions = '',
     } = body;
 
-    console.log(`[API Bookings POST] Creating booking for customer "${customerId}", type: "${cleaningType}", date: ${scheduledDate}`);
+    const sTime = scheduledTime || scheduledStartTime || '14:00';
+    const sDate = scheduledDate || new Date().toISOString().split('T')[0];
 
-    const subtotal = hourlyRate * unitsCount;
-    const feePct = isEmergency ? 0.15 : 0.125;
-    const commission = subtotal * feePct;
-    const totalAmount = subtotal + commission;
-    const depositAmount = totalAmount * 0.3; // 30% upfront deposit
-    const cleanerPayout = subtotal;
+    console.log(`[API Bookings POST] Creating booking for customer "${customerId}", type: "${cleaningType}", date: ${sDate}, cleaners: ${cleanerCount}`);
+
+    const pricing = calculateBookingPrice({
+      cleaningCategory,
+      cleaningType,
+      bookingType: 'direct_cleaner',
+      scheduledDate: sDate,
+      scheduledTime: sTime,
+      unitsCount: Number(unitsCount),
+      cleanerCount: Number(cleanerCount),
+      isEmergencyOverride: Boolean(isEmergency),
+      cleanerRates: {
+        [cleaningType]: { enabled: true, charge_model: 'per_hour', amount: Number(hourlyRate) }
+      } as any
+    });
+
+    const scheduledDateTime = new Date(`${sDate}T${sTime}:00`);
+    const chatUnlockedAt = new Date(scheduledDateTime.getTime() - 30 * 60 * 1000).toISOString();
 
     const bookingId = `bk_${Date.now()}`;
     const newBookingObj = {
@@ -59,24 +76,27 @@ export async function POST(req: NextRequest) {
       cleaner_id: cleanerId,
       property_id: propertyId,
       booking_type: 'direct_cleaner',
-      cleaning_category: 'residential',
+      cleaning_category: cleaningCategory,
       cleaning_type: cleaningType,
-      pricing_model: 'per_hour',
+      pricing_model: pricing.chargeModel,
       units_count: Number(unitsCount),
-      scheduled_date: scheduledDate || new Date().toISOString().split('T')[0],
-      scheduled_start_time: scheduledStartTime,
-      is_emergency: Boolean(isEmergency),
-      is_afterhours: false,
-      total_amount: Number(totalAmount.toFixed(2)),
-      deposit_amount: Number(depositAmount.toFixed(2)),
-      cleaner_payout_amount: Number(cleanerPayout.toFixed(2)),
-      platform_commission: Number(commission.toFixed(2)),
-      surge_bonus_amount: isEmergency ? 10.0 : 0,
+      cleaner_count: Number(pricing.cleanerCount),
+      cleaners_assigned: cleanerId ? [cleanerId] : [],
+      scheduled_date: sDate,
+      scheduled_start_time: sTime,
+      is_emergency: pricing.isEmergency,
+      is_afterhours: pricing.isAfterhours,
+      emergency_surcharge_amount: pricing.emergencySurchargeAmount,
+      total_amount: pricing.finalTotalAmount,
+      deposit_amount: pricing.depositAmount, // 100% upfront
+      cleaner_payout_amount: pricing.cleanerPayoutAmount,
+      platform_commission: pricing.platformCommission,
+      surge_bonus_amount: pricing.surgeBonusAmount,
       special_instructions: specialInstructions,
       status: 'booked',
       before_photos: [],
       after_photos: [],
-      chat_unlocked_at: new Date().toISOString(),
+      chat_unlocked_at: chatUnlockedAt,
       created_at: new Date().toISOString(),
     };
 

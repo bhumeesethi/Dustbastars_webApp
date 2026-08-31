@@ -43,8 +43,10 @@ import {
   MapPin,
   Camera,
   Layers,
-  CheckSquare
+  CheckSquare,
+  Mail
 } from 'lucide-react';
+import PublicCoverageMap from '@/components/PublicCoverageMap';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -1162,6 +1164,12 @@ export default function AdminDashboardPage() {
           {/* ========================================================================= */}
           {activeTab === 'bookings' && (
             <div className="space-y-6">
+              {/* Real-time Admin Operations Google Map */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+                <h3 className="text-base font-black text-[#0f1a38]">Admin Operations Live Map Dispatch</h3>
+                <PublicCoverageMap />
+              </div>
+
               <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
                 <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                   <div>

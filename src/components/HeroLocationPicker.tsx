@@ -329,23 +329,7 @@ export default function HeroLocationPicker({ value, onChange }: HeroLocationPick
         )}
       </div>
 
-      {/* Quick Location Badge Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-        {LONDON_SUGGESTIONS.slice(0, 5).map((s) => (
-          <button
-            key={s.postcode}
-            type="button"
-            onClick={() => handleSelectSuggestion(s)}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all cursor-pointer ${
-              currentLocation.postcode === s.postcode
-                ? 'bg-[#ff6b00] text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            {s.postcode.split(' ')[0]} ({s.area.split(' ')[0]})
-          </button>
-        ))}
-      </div>
+
 
       {/* Interactive Mini Google Map Container with Draggable Marker */}
       <div className="space-y-1">

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Maps UK Postcode Plotter</title>
+  
+  <style>
+    /* Reset & Design System */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    header p {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Controls & Input Card */
+    .search-card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .input-group input {
+      flex: 1;
+      min-width: 240px;
+      background-color: #0f172a;
+      border: 1px solid #475569;
+      color: #ffffff;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    .input-group button {
+      background-color: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .input-group button:hover {
+      background-color: #0369a1;
+      transform: translateY(-1px);
+    }
+
+    .input-group button:active {
+      transform: translateY(0);
+    }
+
+    /* Alert Banner */
+    .alert {
+      display: none;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .alert-success {
+      background-color: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+    }
+
+    .alert-error {
+      background-color: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+
+    .alert-warning {
+      background-color: rgba(245, 158, 11, 0.15);
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+    }
+
+    /* Map Canvas */
+    .map-wrapper {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      border-radius: 1rem;
+      overflow: hidden;
+      border: 1px solid #334155;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Custom Advanced Marker Styling */
+    .custom-marker-pin {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      animation: dropPin 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .pin-icon {
+      font-size: 2rem;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+    }
+
+    .pin-badge {
+      background-color: #0f172a;
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.375rem;
+      margin-top: -0.25rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      white-space: nowrap;
+    }
+
+    @keyframes dropPin {
+      0% {
+        opacity: 0;
+        transform: translateY(-40px) scale(0.5);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+
+  <!-- Google Maps JavaScript API Bootstrap Loader -->
+  <script>
+    (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in p)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),p[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Rebases may not work."):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+      key: "YOUR_API_KEY", // Replace with your Google Maps API Key
+      v: "weekly"
+    });
+  </script>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>🗺️ UK Postcode Map Plotter</h1>
+      <p>Enter any alphanumeric UK postcode to pinpoint its location dynamically on Google Maps.</p>
+    </header>
+
+    <!-- Search Controls Card -->
+    <div class="search-card">
+      <div class="input-group">
+        <input 
+          type="text" 
+          id="postcodeInput" 
+          placeholder="e.g. SW1A 1AA, EC1V 9BP, N7 7JR" 
+          aria-label="UK Postcode Input"
+        />
+        <button type="button" id="findButton">
+          <span>🔍 Find on Map</span>
+        </button>
+      </div>
+
+      <!-- User Feedback Alert -->
+      <div id="alertContainer" class="alert"></div>
+    </div>
+
+    <!-- Map Canvas Container -->
+    <div class="map-wrapper">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script>
+    // Source: Google Maps Platform Code Assist
+    
+    // Global Application State
+    let map;
+    let geocoder;
+    let activeMarker = null;
+
+    // Requirement 1: Standard Google Map centered on UK
+    const UK_DEFAULT_CENTER = { lat: 55.3781, lng: -3.4360 };
+    const UK_DEFAULT_ZOOM = 6;
+
+    /**
+     * Initializes the Google Map & Geocoding Service using modern async importLibrary
+     */
+    async function initMap() {
+      try {
+        // Import Map & Geocoding libraries asynchronously
+        const { Map } = await google.maps.importLibrary("maps");
+        const { Geocoder } = await google.maps.importLibrary("geocoding");
+
+        // Initialize Map
+        map = new Map(document.getElementById("map"), {
+          center: UK_DEFAULT_CENTER,
+          zoom: UK_DEFAULT_ZOOM,
+          mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement
+          internalUsageAttributionIds: ["gmp_git_agentskills_v1"],
+          gestureHandling: "greedy",
+          zoomControl: true,
+          streetViewControl: true,
+        });
+
+        // Initialize Geocoder Service
+        geocoder = new Geocoder();
+
+        console.log("Google Map initialized centered on UK.");
+      } catch (error) {
+        console.error("Initialization error:", error);
+        showAlert("Failed to initialize Google Maps. Please verify your API Key.", "error");
+      }
+    }
+
+    /**
+     * Geocodes the user input postcode and plots a marker on the map
+     */
+    async function geocodePostcode() {
+      const inputField = document.getElementById("postcodeInput");
+      const rawPostcode = inputField.value.trim();
+
+      // Requirement 5: Input Validation
+      if (!rawPostcode) {
+        showAlert("Please enter a valid UK postcode.", "warning");
+        return;
+      }
+
+      // Requirement 3: Enforce UK Postcode Reliability
+      // Explicitly append ", UK" and use componentRestrictions: { country: 'GB' }
+      const formattedAddressQuery = `${rawPostcode}, UK`;
+      const geocodeRequest = {
+        address: formattedAddressQuery,
+        componentRestrictions: {
+          country: "GB"
+        }
+      };
+
+      try {
+        // Import Marker library asynchronously
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+        // Requirement 2: Convert postcode using Google Geocoding API
+        const response = await geocoder.geocode(geocodeRequest);
+
+        if (response && response.results && response.results.length > 0) {
+          const result = response.results[0];
+          const location = result.geometry.location;
+          const fullAddress = result.formatted_address;
+
+          // Requirement 4: Clear existing marker before plotting new location
+          if (activeMarker) {
+            activeMarker.map = null;
+            activeMarker = null;
+          }
+
+          // Center map on new coordinates and zoom in to street level
+          map.setCenter(location);
+          map.setZoom(15);
+
+          // Create custom marker element
+          const pinContainer = document.createElement("div");
+          pinContainer.className = "custom-marker-pin";
+          pinContainer.innerHTML = `
+            <div class="pin-icon">📍</div>
+            <div class="pin-badge">${rawPostcode.toUpperCase()}</div>
+          `;
+
+          // Requirement 4: Create & Drop AdvancedMarkerElement
+          activeMarker = new AdvancedMarkerElement({
+            map: map,
+            position: location,
+            title: fullAddress,
+            content: pinContainer,
+          });
+
+          // Show success message
+          showAlert(`📍 Plotted: ${fullAddress}`, "success");
+        } else {
+          // Requirement 5: User-friendly error message if not found
+          showAlert(`Could not find location for postcode "${rawPostcode}". Please check spelling.`, "error");
+        }
+      } catch (error) {
+        console.error("Geocoding Error:", error);
+        // Requirement 5: Error Handling
+        showAlert(`Geocoding error: ${error.message || "Invalid UK postcode or service unavailable."}`, "error");
+      }
+    }
+
+    /**
+     * Displays a user-friendly alert message
+     */
+    function showAlert(message, type = "info") {
+      const alertBox = document.getElementById("alertContainer");
+      alertBox.className = `alert alert-${type}`;
+      alertBox.innerText = message;
+      alertBox.style.display = "block";
+    }
+
+    // Attach Event Listeners on DOM Load
+    document.addEventListener("DOMContentLoaded", () => {
+      initMap();
+
+      // Requirement 4: Click button trigger
+      document.getElementById("findButton").addEventListener("click", geocodePostcode);
+
+      // Enter key trigger
+      document.getElementById("postcodeInput").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          geocodePostcode();
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

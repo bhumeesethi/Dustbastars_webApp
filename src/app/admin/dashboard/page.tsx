@@ -926,8 +926,8 @@ export default function AdminDashboardPage() {
                           </td>
                         </tr>
                       ) : usersList.length > 0 ? (
-                        usersList.map((u) => (
-                          <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                        usersList.map((u, idx) => (
+                          <tr key={`${u.id}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
                             
                             {/* User Info */}
                             <td className="py-3.5 px-4">
@@ -1194,35 +1194,37 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium">
-                      {statsData?.totalBookings > 0 ? (
-                        <tr className="hover:bg-slate-50/80">
-                          <td className="py-3.5 px-4 font-mono font-bold text-[#0f1a38]">bk_demo_101</td>
-                          <td className="py-3.5 px-4 text-slate-700">{new Date().toISOString().split('T')[0]} at 14:00</td>
-                          <td className="py-3.5 px-4">
-                            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold uppercase">
-                              Residential (Standard Domestic)
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="font-extrabold text-[#0f1a38]">£54.00 Total</div>
-                            <div className="text-[10px] text-emerald-600 font-bold">30% Deposit (£16.20 Paid)</div>
-                          </td>
-                          <td className="py-3.5 px-4 font-bold text-amber-600">£6.75</td>
-                          <td className="py-3.5 px-4 font-bold text-emerald-600">£47.25</td>
-                          <td className="py-3.5 px-4">
-                            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">
-                              Booked / Confirmed
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <button
-                              onClick={() => setEnlargedPhoto('https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800')}
-                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer inline-flex items-center gap-1"
-                            >
-                              <Camera className="w-3.5 h-3.5 text-blue-600" /> Photos (2)
-                            </button>
-                          </td>
-                        </tr>
+                      {statsData?.recentBookings && statsData.recentBookings.length > 0 ? (
+                        statsData.recentBookings.map((b: any, idx: number) => (
+                          <tr key={b.id || b._id || idx} className="hover:bg-slate-50/80">
+                            <td className="py-3.5 px-4 font-mono font-bold text-[#0f1a38]">{b.id || 'bk_live'}</td>
+                            <td className="py-3.5 px-4 text-slate-700">{b.scheduled_date || new Date().toISOString().split('T')[0]} at {b.scheduled_start_time || b.scheduled_time || '14:00'}</td>
+                            <td className="py-3.5 px-4">
+                              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold uppercase">
+                                {b.cleaning_category || 'residential'} ({b.cleaning_type ? String(b.cleaning_type).replace(/_/g, ' ') : 'std domestic'})
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="font-extrabold text-[#0f1a38]">£{Number(b.total_amount || 0).toFixed(2)} Total</div>
+                              <div className="text-[10px] text-emerald-600 font-bold">100% Upfront (£{Number(b.deposit_amount || b.total_amount || 0).toFixed(2)} Paid)</div>
+                            </td>
+                            <td className="py-3.5 px-4 font-bold text-amber-600">£{Number(b.platform_commission || 0).toFixed(2)}</td>
+                            <td className="py-3.5 px-4 font-bold text-emerald-600">£{Number(b.cleaner_payout_amount || 0).toFixed(2)}</td>
+                            <td className="py-3.5 px-4">
+                              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">
+                                {b.status || 'booked'}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <button
+                                onClick={() => setEnlargedPhoto('https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800')}
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <Camera className="w-3.5 h-3.5 text-blue-600" /> Photos ({b.before_photos?.length || 0})
+                              </button>
+                            </td>
+                          </tr>
+                        ))
                       ) : (
                         <tr>
                           <td colSpan={8} className="py-8 text-center text-slate-400">No booking records found in database.</td>

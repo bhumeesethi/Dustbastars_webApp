@@ -96,6 +96,23 @@ export async function GET(req: NextRequest) {
       { month: 'May (Current)', revenue: Math.round(totalRevenue * 0.33), commission: Math.round(totalCommission * 0.33), bookings: Math.max(5, Math.round(totalBookings * 0.34)) },
     ];
 
+    // Combine with local JSON DB to ensure all customer payments are returned
+    const { getDb } = require('@/lib/db');
+    const localDb = getDb();
+    if (localDb && localDb.bookings) {
+      const existingIds = new Set(allBookingsList.map((b: any) => b.id || (b._id ? b._id.toString() : '')));
+      localDb.bookings.forEach((b: any) => {
+        if (!existingIds.has(b.id)) {
+          allBookingsList.push(b);
+        }
+      });
+    }
+
+    // Sort newest bookings first
+    allBookingsList.sort((a: any, b: any) => 
+      new Date(b.created_at || b.createdAt || 0).getTime() - new Date(a.created_at || a.createdAt || 0).getTime()
+    );
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -106,7 +123,7 @@ export async function GET(req: NextRequest) {
         totalCustomers,
         totalCleaners,
         totalAdmins,
-        totalBookings,
+        totalBookings: allBookingsList.length,
         completedBookings,
         activeBookings,
         cancelledBookings,
@@ -126,7 +143,8 @@ export async function GET(req: NextRequest) {
         categoryBreakdown,
         statusBreakdown,
         revenueTrendData,
-        recentAuditLogs
+        recentAuditLogs,
+        recentBookings: allBookingsList
       }
     });
 

@@ -42,13 +42,17 @@ import {
   Trash2,
   Maximize2,
   Image as ImageIcon,
-  Database
+  Database,
+  Menu
 } from 'lucide-react';
 import PublicCoverageMap from '@/components/PublicCoverageMap';
 import CleanerCoverageMap from '@/components/CleanerCoverageMap';
 import LiveJobTrackingMap from '@/components/LiveJobTrackingMap';
 import HeroLocationPicker from '@/components/HeroLocationPicker';
 import CustomerPropertyLocationPicker from '@/components/CustomerPropertyLocationPicker';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import MobileDrawerMenu from '@/components/MobileDrawerMenu';
+import { initNativeApp, registerBackButtonHandler, triggerHaptic } from '@/lib/mobile/native';
 
 export default function DustBustarsApp() {
   // Navigation & Role State
@@ -77,6 +81,34 @@ export default function DustBustarsApp() {
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [pendingRedirectTab, setPendingRedirectTab] = useState<string | null>(null);
+
+  // Mobile App Navigation & Hardware Listeners
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    // Initialize native status bar and dismiss splash screen on mobile
+    initNativeApp();
+  }, []);
+
+  useEffect(() => {
+    // Hardware Android back button handler
+    const unregister = registerBackButtonHandler(() => {
+      if (isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+        return true;
+      }
+      if (showAuthModal) {
+        setShowAuthModal(false);
+        return true;
+      }
+      if (activeTab !== 'landing') {
+        setActiveTab('landing');
+        return true;
+      }
+      return false;
+    });
+    return unregister;
+  }, [isMobileMenuOpen, showAuthModal, activeTab]);
 
   // Persistent Auth Session & Tab/Page Restore on Browser Reload
   useEffect(() => {
@@ -898,7 +930,7 @@ export default function DustBustarsApp() {
   const currentBooking = allBookings.find(b => b.id === activeBookingId) || allBookings[0];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased mobile-nav-spacer">
       {/* Hidden File Picker Inputs */}
       <input
         type="file"
@@ -916,7 +948,7 @@ export default function DustBustarsApp() {
       />
 
       {/* Header Bar: Public Website vs Logged-In Web Application */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-200/80 shadow-xs px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-200/80 shadow-xs px-4 sm:px-6 py-3 sm:py-4 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center justify-between gap-3 sm:gap-4">
         {/* Brand Logo */}
         <div 
           onClick={() => {
@@ -927,25 +959,25 @@ export default function DustBustarsApp() {
               setLandingSubTab('home');
             }
           }}
-          className="flex items-center gap-3 cursor-pointer hover:opacity-90 active:scale-95 transition-all group"
+          className="flex items-center gap-2.5 sm:gap-3 cursor-pointer hover:opacity-90 active:scale-95 transition-all group"
           title="DustBustars Platform"
         >
           <img
             src="/logo.png"
             alt="DustBustars Logo"
-            className="h-12 w-auto object-contain drop-shadow-sm group-hover:scale-105 transition-all"
+            className="h-10 sm:h-12 w-auto object-contain drop-shadow-sm group-hover:scale-105 transition-all"
           />
           <div>
-            <h1 className="text-xl font-extrabold tracking-tight text-[#0f1a38]">
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-[#0f1a38]">
               DustBustars
             </h1>
-            <p className="text-xs text-slate-500 font-medium">Home, Commercial & Emergency Cleaning Platform</p>
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Home, Commercial & Emergency Cleaning</p>
           </div>
         </div>
 
         {/* Public Website Navigation Bar (When NOT Logged In) */}
         {!isLoggedIn ? (
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <nav className="hidden md:flex items-center gap-2 text-xs font-bold text-slate-700">
               <button 
                 onClick={() => {
@@ -1046,22 +1078,34 @@ export default function DustBustarsApp() {
               </button>
             </nav>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => {
                   setAuthRole('customer');
                   setShowAuthModal(true);
                 }}
-                className="px-5 py-2.5 rounded-xl bg-[#ff6b00] hover:bg-[#e05e00] text-white font-black text-xs transition-all shadow-md shadow-orange-500/20 cursor-pointer active:scale-95"
+                className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#ff6b00] hover:bg-[#e05e00] text-white font-black text-xs transition-all shadow-md shadow-orange-500/20 cursor-pointer active:scale-95"
               >
                 Book a Cleaner
+              </button>
+
+              {/* Mobile Drawer Trigger */}
+              <button
+                onClick={() => {
+                  triggerHaptic('light');
+                  setIsMobileMenuOpen(true);
+                }}
+                className="md:hidden p-2 rounded-xl bg-slate-100 text-slate-700 hover:text-slate-900 active:scale-95 transition-all cursor-pointer"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="w-5 h-5" />
               </button>
             </div>
           </div>
         ) : (
           /* Logged-In Web Application Navigation Bar */
-          <div className="flex flex-wrap items-center gap-4">
-            <nav className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
+          <div className="flex items-center gap-3">
+            <nav className="hidden md:flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
               {[
                 { id: 'landing', label: 'Website Home', icon: Sparkles, color: 'from-slate-800 to-slate-950' },
                 { id: 'customer', label: 'Customer Portal', icon: Building2, color: 'from-cyan-600 to-blue-600' },
@@ -1088,7 +1132,7 @@ export default function DustBustarsApp() {
               })}
             </nav>
 
-            <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
+            <div className="flex items-center gap-2 sm:gap-3 sm:pl-2 sm:border-l sm:border-slate-200">
               <span className="text-xs font-bold text-[#0f1a38] hidden lg:inline">
                 👤 {currentUser?.full_name || (authRole === 'cleaner' ? 'Elena (Cleaner)' : 'James (Customer)')}
               </span>
@@ -1104,9 +1148,21 @@ export default function DustBustarsApp() {
                   setLandingSubTab('home');
                   showAlert('Signed out successfully. Returned to Home Landing Page.', 'info');
                 }}
-                className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-xs"
+                className="hidden sm:flex px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 cursor-pointer active:scale-95 items-center gap-1.5 shadow-xs"
               >
                 Sign Out 🚪
+              </button>
+
+              {/* Mobile Drawer Trigger for Logged-In User */}
+              <button
+                onClick={() => {
+                  triggerHaptic('light');
+                  setIsMobileMenuOpen(true);
+                }}
+                className="md:hidden p-2 rounded-xl bg-slate-100 text-slate-700 hover:text-slate-900 active:scale-95 transition-all cursor-pointer"
+                aria-label="Open mobile menu"
+              >
+                <Menu className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -4698,6 +4754,48 @@ export default function DustBustarsApp() {
         </div>
       )}
 
+      {/* Mobile Navigation Drawer for Public & Logged In User */}
+      <MobileDrawerMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isLoggedIn={isLoggedIn}
+        currentUser={currentUser}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        landingSubTab={landingSubTab}
+        setLandingSubTab={setLandingSubTab}
+        onOpenAuth={(role) => {
+          if (role) setAuthRole(role);
+          setShowAuthModal(true);
+        }}
+        onLogout={() => {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('dustbustars_auth_token');
+            localStorage.removeItem('dustbustars_active_tab');
+          }
+          setIsLoggedIn(false);
+          setCurrentUser(null);
+          setActiveTab('landing');
+          setLandingSubTab('home');
+          showAlert('Signed out successfully. Returned to Home Landing Page.', 'info');
+        }}
+      />
+
+      {/* Mobile Bottom Navigation Bar (iOS / Android) */}
+      <MobileBottomNav
+        isLoggedIn={isLoggedIn}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        landingSubTab={landingSubTab}
+        setLandingSubTab={setLandingSubTab}
+        onOpenAuth={(role) => {
+          if (role) setAuthRole(role);
+          setShowAuthModal(true);
+        }}
+        currentUser={currentUser}
+      />
+
     </div>
   );
 }
+

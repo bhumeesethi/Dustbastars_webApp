@@ -1081,8 +1081,7 @@ export default function DustBustarsApp() {
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => {
-                  setAuthRole('customer');
-                  setShowAuthModal(true);
+                  setActiveTab('customer');
                 }}
                 className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#ff6b00] hover:bg-[#e05e00] text-white font-black text-xs transition-all shadow-md shadow-orange-500/20 cursor-pointer active:scale-95"
               >
@@ -1256,8 +1255,7 @@ export default function DustBustarsApp() {
                   <div>
                     <button
                       onClick={() => {
-                        setAuthRole('customer');
-                        setShowAuthModal(true);
+                        setActiveTab('customer');
                       }}
                       className="px-8 py-3.5 rounded-xl bg-[#ff6b00] hover:bg-[#e05e00] text-white font-extrabold text-sm transition-all shadow-lg shadow-orange-500/20 cursor-pointer active:scale-95"
                     >
@@ -1483,8 +1481,7 @@ export default function DustBustarsApp() {
                   </p>
                   <button
                     onClick={() => {
-                      setAuthRole('customer');
-                      setShowAuthModal(true);
+                      setActiveTab('customer');
                     }}
                     className="px-8 py-4 rounded-xl bg-[#ff6b00] hover:bg-[#e05e00] text-white font-extrabold text-sm transition-all shadow-xl shadow-orange-600/30 cursor-pointer active:scale-95 inline-block"
                   >
@@ -2205,14 +2202,7 @@ export default function DustBustarsApp() {
                           setScheduledDate(heroDate);
                           setScheduledTime(heroTime);
                           
-                          if (!isLoggedIn) {
-                            showAlert('Please sign in or create an account to view available cleaners and complete your booking.', 'info');
-                            setAuthRole('customer');
-                            setPendingRedirectTab('customer');
-                            setShowAuthModal(true);
-                          } else {
-                            setActiveTab('customer');
-                          }
+                          setActiveTab('customer');
                         }}
                         className="w-full py-3.5 rounded-xl bg-[#ff6b00] hover:bg-[#e05e00] text-white font-extrabold text-sm transition-all shadow-lg shadow-orange-500/30 cursor-pointer active:scale-95 flex items-center justify-center gap-2"
                       >
@@ -2431,7 +2421,7 @@ export default function DustBustarsApp() {
 
               <div className="space-y-2">
                 <div className="font-bold text-white uppercase text-[11px] tracking-wider mb-1">Services</div>
-                <div><button onClick={() => { setAuthRole('customer'); setShowAuthModal(true); }} className="hover:text-white text-left cursor-pointer">Book a Cleaner</button></div>
+                <div><button onClick={() => { setActiveTab('customer'); }} className="hover:text-white text-left cursor-pointer">Book a Cleaner</button></div>
                 <div><button onClick={() => { setActiveTab('landing'); setLandingSubTab('how-it-works'); }} className="hover:text-white text-left cursor-pointer">How It Works</button></div>
                 <div><button onClick={() => { setActiveTab('landing'); setLandingSubTab('pricing'); }} className="hover:text-white text-left cursor-pointer">Pricing</button></div>
               </div>
@@ -4452,8 +4442,8 @@ export default function DustBustarsApp() {
       {/* MODAL 4: AUTHENTICATION (SIGN UP & LOGIN) POPUP MODAL */}
       {/* ------------------------------------------------------------- */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative text-slate-900">
+        <div className="fixed inset-0 z-[9999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative text-slate-900 max-h-[90vh] overflow-y-auto my-auto">
             <button
               onClick={() => setShowAuthModal(false)}
               className="absolute top-5 right-5 p-1 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 cursor-pointer"

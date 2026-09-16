@@ -180,10 +180,9 @@ export default function MobileDrawerMenu({
               <button
                 onClick={() => {
                   triggerHaptic('medium');
-                  onClose();
-                  onOpenAuth('customer');
+                  handlePortalSwitch('customer');
                 }}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-extrabold text-sm shadow-lg shadow-orange-500/25 active:scale-95 transition-all text-center flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-extrabold text-sm shadow-lg shadow-orange-500/25 active:scale-95 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4" />
                 Book a Cleaner Now
@@ -191,13 +190,12 @@ export default function MobileDrawerMenu({
               <button
                 onClick={() => {
                   triggerHaptic('light');
-                  onClose();
-                  onOpenAuth('cleaner');
+                  handlePortalSwitch('cleaner');
                 }}
-                className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-bold text-xs active:scale-95 transition-all text-center flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-bold text-xs active:scale-95 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
               >
                 <UserCheck className="w-4 h-4 text-emerald-400" />
-                Cleaner Partner Login
+                Cleaner Portal / Dashboard
               </button>
             </div>
           ) : (

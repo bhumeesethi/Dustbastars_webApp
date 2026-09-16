@@ -30,6 +30,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                window.Capacitor = window.Capacitor || {};
+                if (!window.Capacitor.triggerEvent) {
+                  window.Capacitor.triggerEvent = function() { return true; };
+                }
+              }
+            `,
+          }}
+        />
+      </head>
       <body className="bg-[#0b0f19] text-slate-100 antialiased min-h-screen">
         {children}
       </body>

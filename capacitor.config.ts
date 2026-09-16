@@ -5,12 +5,12 @@ const config: CapacitorConfig = {
   appName: 'DustBustars',
   webDir: 'out',
   server: {
-    androidScheme: 'https',
+    url: 'http://192.168.29.98:3000',
     cleartext: true,
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 0,
       launchAutoHide: true,
       backgroundColor: '#0b0f19',
       androidSplashResourceName: 'splash',

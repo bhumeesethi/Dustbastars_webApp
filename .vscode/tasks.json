@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Dev Server",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Starting.*",
+          "endsPattern": ".*Ready in.*"
+        }
+      }
+    },
+    {
+      "label": "Sync Mobile Assets (Capacitor)",
+      "type": "npm",
+      "script": "mobile:sync"
+    },
+    {
+      "label": "Open Android Studio",
+      "type": "npm",
+      "script": "mobile:android"
+    }
+  ]
+}

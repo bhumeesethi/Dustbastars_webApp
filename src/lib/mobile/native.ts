@@ -45,6 +45,12 @@ export const getApiUrl = (endpoint: string): string => {
  * Initialize native mobile app shell (Status bar, splash screen, listeners).
  */
 export const initNativeApp = async (): Promise<void> => {
+  try {
+    await SplashScreen.hide();
+  } catch (err) {
+    // Ignore if not native
+  }
+
   if (!isNative()) return;
 
   try {
@@ -57,13 +63,6 @@ export const initNativeApp = async (): Promise<void> => {
   } catch (err) {
     console.warn('[Native] StatusBar init error:', err);
   }
-
-  try {
-    // Hide splash screen smoothly after app is ready
-    await SplashScreen.hide({ fadeOutDuration: 400 });
-  } catch (err) {
-    console.warn('[Native] SplashScreen hide error:', err);
-  }
 };
 
 /**
@@ -75,20 +74,31 @@ export const registerBackButtonHandler = (
 ): (() => void) => {
   if (!isNative()) return () => {};
 
-  const listenerPromise = App.addListener('backButton', ({ canGoBack }) => {
-    const handled = onBack();
-    if (!handled) {
-      if (canGoBack) {
-        window.history.back();
-      } else {
-        App.exitApp();
+  try {
+    const listenerPromise = App.addListener('backButton', ({ canGoBack }) => {
+      try {
+        const handled = onBack();
+        if (!handled) {
+          if (canGoBack) {
+            window.history.back();
+          } else {
+            App.exitApp();
+          }
+        }
+      } catch (e) {
+        console.warn('[Native] backButton handler error:', e);
       }
-    }
-  });
+    });
 
-  return () => {
-    listenerPromise.then((handle) => handle.remove()).catch(() => {});
-  };
+    return () => {
+      try {
+        listenerPromise.then((handle) => handle.remove()).catch(() => {});
+      } catch {}
+    };
+  } catch (err) {
+    console.warn('[Native] registerBackButtonHandler failed:', err);
+    return () => {};
+  }
 };
 
 /**
